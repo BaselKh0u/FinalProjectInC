@@ -21,9 +21,28 @@ typedef struct {
     char country[16];
 } vote;
 
+FILE* safe_open(const char* filename, const char* mode)
+{
+    FILE* file = fopen(filename, mode);
+    if (!file)
+    {
+        printf("Unable to open file.\n");
+        return 0;
+    }
+    return file;
+}
+
 int countLines(char* filename)
 {
-    // Implementation of countLines function
+    FILE* file;
+    file = safe_open(filename, "r");    
+    int count = 0;  
+    char c;
+    for (c = getc(file); c != EOF; c = getc(file))
+        if (c == '\n')
+            count = count + 1;
+    fclose(file);
+    return count;
 }
 
 void freeMovie(movie* m) {
