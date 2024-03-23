@@ -1,9 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
+#define MAX_MOVIES 100
+#define MAX_COMMENT_LENGTH 100
+#define MOIVES "moviesData.txt"
+#define VOTES "votingData.txt"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define MAX_MOVIES 100
-#define MAX_COMMENT_LENGTH 100
+
 
 typedef struct {
     int id;
@@ -11,7 +14,7 @@ typedef struct {
     char* genre;
     char studio[31];
     int year;
-    struct vote* votes;
+    vote* votes;
     int num_votes;
 } movie;
 
