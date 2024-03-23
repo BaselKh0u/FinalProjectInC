@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define MAX_MOVIES 100
 #define MAX_COMMENT_LENGTH 100
-#define MOIVES "moviesData.txt"
+#define MOVIES "moviesData.txt"
 #define VOTES "votingData.txt"
 #include <stdio.h>
 #include <stdlib.h>
