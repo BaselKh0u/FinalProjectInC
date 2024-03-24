@@ -7,45 +7,84 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct vote {
+    int value;
+    char* comment;
+    char country[16];
+} vote;
 
-typedef struct {
+typedef struct movie {
     int id;
-    char* name;
-    char* genre;
+    char* p2name;
+    char* p2genre;
     char studio[31];
     int year;
     vote* votes;
     int num_votes;
 } movie;
 
-typedef struct {
-    int value;
-    char* comment;
-    char country[16];
-} vote;
+void allocateMovieStrings(movie* m)
+{
+    m->p2name = (char*)malloc(MAX_COMMENT_LENGTH * sizeof(char));
+    m->p2genre = (char*)malloc(MAX_COMMENT_LENGTH * sizeof(char));
+
+    if (m->p2name == NULL || m->p2genre == NULL) {
+        printf("Memory allocation failed.\n");
+        exit(1);
+    }
+}
 
 FILE* safe_open(const char* filename, const char* mode)
 {
-    FILE* file = fopen(filename, mode);
+    FILE* file;
+    file = fopen(filename, mode);
     if (!file)
     {
         printf("Unable to open file.\n");
-        return 0;
+        return 1;
     }
     return file;
 }
 
-int countLines(char* filename)
+int countLines(const char* filename)
 {
     FILE* file;
-    file = safe_open(filename, "r");    
-    int count = 0;  
+    file = safe_open(filename, "rt");
+    int count = 0;
     char c;
+    fscanf(file, "%*[^\n]\n"); // skip first line
     for (c = getc(file); c != EOF; c = getc(file))
         if (c == '\n')
             count = count + 1;
     fclose(file);
-    return count;
+    return count + 1;
+}
+
+void FromFile2Movie(const char* filename, movie* array, int size)
+{
+    FILE* movies_file;
+    movies_file = safe_open(filename, "rt");
+    fscanf(movies_file, "%*[^\n]\n");
+    int read = 0;
+    int records = 0;
+    while (records < size)
+    {
+        allocateMovieStrings(&array[records]);
+        read = fscanf(movies_file, "%d,%[^,],%[^,],%30[^,],%d\n", &array[records].id, array[records].p2name, array[records].p2genre, array[records].studio, &array[records].year);
+        if (read == 5) records++;
+        else if (read != 5 && !feof(movies_file))
+        {
+            printf("File format is incorrect.\n");
+            break;
+        }
+        else if (ferror(movies_file))
+        {
+            printf("Error reading from file.\n");
+            break;
+        }
+    }
+
+    fclose(movies_file);
 }
 
 void freeMovie(movie* m) {
@@ -66,7 +105,7 @@ int main() {
     // Read data from files and populate arrays of movies and votes
     // Define array of movies
     movie movies[MAX_MOVIES];
-    int num_movies = 0;
+    int num_movies = countLines(MOVIES);
 
     // Populate array of movies
     // Use countLines and FromFile2Movies functions to read data from moviesData.txt
