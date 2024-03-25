@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define MAX_MOVIES 100
+#define MAX_TITLE_LENGTH 50
 #define MAX_COMMENT_LENGTH 100
 #define MOVIES "moviesData.txt"
 #define VOTES "votingData.txt"
@@ -150,6 +151,53 @@ int FromFile2Votes(const char *filename, movie *movies, int numMovies) {
 
     fclose(fp);
     return 1; 
+}
+} Movie;
+
+int addMovie(Movie movies[], int *size) {
+    char title[MAX_TITLE_LENGTH];
+    int year;
+    float rating;
+
+    // Input movie details from the user
+    printf("Enter the title of the movie: ");
+    scanf("%s", title);
+    printf("Enter the year of the movie: ");
+    scanf("%d", &year);
+    printf("Enter the rating of the movie: ");
+    scanf("%f", &rating);
+
+    // Check if the movie already exists in the array
+    for (int i = 0; i < *size; i++) {
+        if (strcmp(movies[i].title, title) == 0 && movies[i].year == year) {
+            printf("Movie already exists in the list.\n");
+            return 0; // Movie already exists
+        }
+    }
+
+    // Add the new movie to the array
+    strcpy(movies[*size].title, title);
+    movies[*size].year = year;
+    movies[*size].rating = rating;
+    movies[*size].votes = 0;
+    (*size)++; // Update the size of the movie array
+
+    return 1; // Movie added successfully
+}
+
+int main() {
+    Movie movies[MAX_MOVIES];
+    int size = 0;
+    int result;
+
+    result = addMovie(movies, &size);
+    if (result == 1) {
+        printf("Movie added successfully!\n");
+    } else {
+        printf("Failed to add movie.\n");
+    }
+
+    return 0;
 }
 
 void freeMovie(movie* m) {
