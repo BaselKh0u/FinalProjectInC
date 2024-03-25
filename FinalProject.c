@@ -86,6 +86,71 @@ void FromFile2Movie(const char* filename, movie* array, int size)
 
     fclose(movies_file);
 }
+int FromFile2Votes(const char *filename, movie *movies, int numMovies) {
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Error: Cannot open file %s\n", filename);
+        return 0; // Indicate failure
+    }
+
+    char buffer[256]; // Adjust buffer size if needed
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        char *token = strtok(buffer, ":");
+
+        // 1. Get Movie ID
+        int movieId = atoi(token);
+
+        // 2. Find the corresponding movie
+        int movieIndex = -1; 
+        for (int i = 0; i < numMovies; i++) {
+            if (movies[i].id == movieId) {
+                movieIndex = i;
+                break;
+            }
+        }
+
+        if (movieIndex == -1) {
+            fprintf(stderr, "Error: Vote for unknown movie (ID: %d)\n", movieId);
+            continue; // Skip to the next vote
+        }
+
+        // 3. Create a new vote struct
+        vote *newVote = malloc(sizeof(vote)); 
+        if (newVote == NULL) {
+            fprintf(stderr, "Memory allocation error!\n");
+            fclose(fp);
+            return 0; 
+        }
+
+        // 4. Parse vote, country, and comment
+        token = strtok(NULL, ":"); 
+        newVote->value = atoi(token);
+
+        token = strtok(NULL, ":");
+        strcpy(newVote->country, token); 
+
+        token = strtok(NULL, ":"); 
+        if (token != NULL && strcmp(token, "-\n") != 0) { // Handle comment
+            newVote->p2comment = malloc(strlen(token) + 1);
+            if (newVote->p2comment == NULL) {
+                fprintf(stderr, "Memory allocation error!\n");
+                free(newVote);
+                fclose(fp);
+                return 0; 
+            }
+            strcpy(newVote->p2comment, token); 
+        } else {
+            newVote->p2comment = NULL; // No comment
+        }
+
+        // 5. Add the vote to the movie's list (you'll need to implement dynamic resizing) 
+        // ...
+
+    }
+
+    fclose(fp);
+    return 1; 
+}
 
 void freeMovie(movie* m) {
     // Implementation to free memory allocated for a movie
