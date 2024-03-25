@@ -2,6 +2,7 @@
 #define MAX_MOVIES 100
 #define MAX_TITLE_LENGTH 50
 #define MAX_COMMENT_LENGTH 100
+#define MAX_VOTES 100
 #define MOVIES "moviesData.txt"
 #define VOTES "votingData.txt"
 #include <stdio.h>
@@ -13,7 +14,14 @@ typedef struct vote {
     char* comment;
     char country[16];
 } vote;
-
+struct Movie {
+    int id;
+    char title[50];
+    int year;
+    float rating;
+    int numVotes;
+    int votes[MAX_VOTES];
+};
 typedef struct movie {
     int id;
     char* p2name;
@@ -196,6 +204,62 @@ int main() {
     } else {
         printf("Failed to add movie.\n");
     }
+
+    return 0;
+}
+int addVote(int movieId, struct Movie movies[], int size) {
+    // Search for the movie with the given ID
+    int index = -1;
+    for (int i = 0; i < size; i++) {
+        if (movies[i].id == movieId) {
+            index = i;
+            break;
+        }
+    }
+    // If movie not found, return 0 (failure)
+    if (index == -1) {
+        printf("Movie with ID %d not found.\n", movieId);
+        return 0;
+    }
+
+    // Get vote data from the user
+    int newVote;
+    printf("Enter the vote for movie %s (%d): ", movies[index].title, movieId);
+    scanf("%d", &newVote);
+
+    // Check if the vote already exists in the movie's vote list
+    for (int i = 0; i < movies[index].numVotes; i++) {
+        if (movies[index].votes[i] == newVote) {
+            printf("Vote %d already exists for movie %s (%d).\n", newVote, movies[index].title, movieId);
+            return 0; // Vote already exists, return 0 (failure)
+        }
+    }
+
+    // Add the new vote to the movie's vote list
+    if (movies[index].numVotes < MAX_VOTES) {
+        movies[index].votes[movies[index].numVotes++] = newVote;
+        printf("Vote %d added successfully for movie %s (%d).\n", newVote, movies[index].title, movieId);
+        return 1; // Successfully added vote, return 1 (success)
+    } else {
+        printf("Maximum number of votes reached for movie %s (%d).\n", movies[index].title, movieId);
+        return 0; // Maximum number of votes reached, return 0 (failure)
+    }
+}
+
+int main() {
+    // Example usage
+    struct Movie movies[10] = {
+        {1, "The Matrix", 1999, 8.7, 0, {}}, // Example movie data
+        {2, "Inception", 2010, 8.8, 0, {}}   // Example movie data
+        // Add more movie data as needed...
+    };
+    int numMovies = 2; // Update this with the actual number of movies
+
+    // Example usage of addVote function
+    int movieId;
+    printf("Enter the ID of the movie to add a vote: ");
+    scanf("%d", &movieId);
+    addVote(movieId, movies, numMovies); // Call addVote function
 
     return 0;
 }
