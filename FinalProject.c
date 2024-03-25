@@ -93,14 +93,14 @@ int FromFile2Votes(const char *filename, movie *movies, int numMovies) {
         return 0; // Indicate failure
     }
 
-    char buffer[256]; // Adjust buffer size if needed
+    char buffer[256]; 
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         char *token = strtok(buffer, ":");
 
-        // 1. Get Movie ID
+        
         int movieId = atoi(token);
 
-        // 2. Find the corresponding movie
+        
         int movieIndex = -1; 
         for (int i = 0; i < numMovies; i++) {
             if (movies[i].id == movieId) {
@@ -111,10 +111,10 @@ int FromFile2Votes(const char *filename, movie *movies, int numMovies) {
 
         if (movieIndex == -1) {
             fprintf(stderr, "Error: Vote for unknown movie (ID: %d)\n", movieId);
-            continue; // Skip to the next vote
+            continue; 
         }
 
-        // 3. Create a new vote struct
+       
         vote *newVote = malloc(sizeof(vote)); 
         if (newVote == NULL) {
             fprintf(stderr, "Memory allocation error!\n");
@@ -122,7 +122,7 @@ int FromFile2Votes(const char *filename, movie *movies, int numMovies) {
             return 0; 
         }
 
-        // 4. Parse vote, country, and comment
+        
         token = strtok(NULL, ":"); 
         newVote->value = atoi(token);
 
