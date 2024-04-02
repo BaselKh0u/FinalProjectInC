@@ -139,19 +139,24 @@ void FromFile2Votes(const char* filename, Movie* movies, int size) {
     FILE* votes_file = safe_open(filename, "rt");
     fscanf(votes_file, "%*[^\n]\n"); // Skip first line
     int records = 0;
-    while (records < size) {
+    while (records < size) 
+    {
         int movieId, voteValue;
         char comment[MAX_COMMENT_LENGTH], country[MAX_COUNTRY_LENGTH];
         int read = fscanf(votes_file, "%d:%d:%16[^:]:%99[^\n]\n", &movieId, &voteValue, country, comment);
-        if (read == 4) {
+        if (read == 4) 
+        {
             int movieIndex = -1;
-            for (int i = 0; i < size; i++) {
-                if (movies[i].id == movieId) {
+            for (int i = 0; i < size; i++)
+            {
+                if (movies[i].id == movieId) 
+                {
                     movieIndex = i;
                     break;
                 }
             }
-            if (movieIndex != -1) {
+            if (movieIndex != -1) 
+            {
                 if (movies[movieIndex].numVotes < MAX_VOTES)
                 {
                     int voteIndex = movies[movieIndex].numVotes;
@@ -591,7 +596,8 @@ void deleteWorst(const char* genre, Movie* movies, int* size)
     int found = 0; // Flag to check if any movie of the given genre is found
 
     // Find the minimum vote for movies of the given genre
-    for (int i = 0; i < *size; i++) {
+    for (int i = 0; i < *size; i++) 
+    {
         if (strcmp(movies[i].p2genre, genre) == 0)
         {
             found = 1; // At least one movie of the given genre is found
@@ -748,7 +754,7 @@ int main()
             printf("Please enter a genre: ");
             char G[MAX_GENRE_LENGTH];
             scanf("%s", G);
-            deleteWorst(G, movies, size);
+            deleteWorst(G, movies, &size);
             break;
 
         case 0:
