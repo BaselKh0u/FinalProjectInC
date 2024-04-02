@@ -27,9 +27,9 @@ typedef struct
 	char* p2name;   // the name of the movie (title)
 	char* p2genre;   // the type of the movie genre 
 	char studio[MAX_STUDIO_LENGTH];    // studio name
-	int year;
-	vote* p2list;
-	int Nvotes;
+	int year; // the year of the movie
+	vote* p2list; // the list of votes for the movie
+	int Nvotes; // the number of votes for the movie
 
 } movie;
 
