@@ -24,8 +24,8 @@ typedef struct
 typedef struct
 {
 	int id; // the id of the reviewer 
-	char* p2name;   // title 
-	char* p2genre;   // movie genre 
+	char* p2name;   // the name of the movie (title)
+	char* p2genre;   // the type of the movie genre 
 	char studio[MAX_STUDIO_LENGTH];    // studio name
 	int year;
 	vote* p2list;
@@ -47,8 +47,7 @@ int countLines(const char* filename)
 		}
 		fclose(file_ptr);
 	}
-	else 
-	{
+	else {
 		printf("%s: File opening failed!\n", filename);
 		exit(EXIT_FAILURE);
 	}
@@ -57,7 +56,7 @@ int countLines(const char* filename)
 }
 
 // Function receives the name of the movie file, a pointer to the movie array
-// and its size. The function will read from the file all the data of the movies and fill the array.
+// and its size. The function will reads from the file all the data of the movies and fill the array.
 int FromFile2Movies(const char* filename, movie** movies, const int size)
 {
 	*movies = (movie*)malloc(sizeof(movie) * size);
@@ -74,6 +73,8 @@ int FromFile2Movies(const char* filename, movie** movies, const int size)
 
 	if (fopen_s(&movie_file, filename, "r") == 0)
 	{
+		fgets(buffer, sizeof(buffer), movie_file);
+		// printf("IGNORE: %s\n", buffer);
 		while (fgets(buffer, sizeof(buffer), movie_file) && counter < size)
 		{
 			(*movies)[counter].Nvotes = 0;
@@ -120,6 +121,8 @@ int FromFile2Votes(const char* filename, movie** movies, const int size)
 	FILE* votes_file;
 	if (fopen_s(&votes_file, filename, "r") == 0)
 	{
+		fgets(buffer, sizeof(buffer), votes_file);
+		// printf("IGNORE: %s\n", buffer);
 		while (fgets(buffer, sizeof(buffer), votes_file))
 		{
 			int mid = -1;
@@ -452,6 +455,7 @@ void RecommendMovie(const int vote, movie** movies, const int size)
 	int res = fopen_s(&file_recommend, "Recommendation.txt", "w");
 	if (res == 0)
 	{
+		fprintf(file_recommend, "%s\n", "movie_name,Genre");
 		float average = 0;
 		for (int i = 0; i < size; i++)
 		{
@@ -481,51 +485,45 @@ void RecommendMovie(const int vote, movie** movies, const int size)
 int deleteWorst(const char* genre, movie** movies, const int size)
 {
 	int found = 0;
+	int worst = 9999;
 	for (int i = 0; i < size; i++)
 	{
 		if (strcmp((*movies)[i].p2genre, genre) == 0)
 		{
-			int worst = 9999;
-			int count = 0;
+			for (int j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				if ((*movies)[i].p2list[j].value < worst)
+				{
+					worst = (*movies)[i].p2list[j].value;
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp((*movies)[i].p2genre, genre) == 0)
+		{
 			for (int j = 0; j < (*movies)[i].Nvotes; j++)
 			{
 				if ((*movies)[i].p2list[j].value == worst)
 				{
-					count++;
-				}
-				else if ((*movies)[i].p2list[j].value < worst)
-				{
-					worst = (*movies)[i].p2list[j].value;
-					count = 1;
-				}
-			}
-			if (count > 0)
-			{
-				int idx = 0;
-				vote* new_votes = (vote*)malloc(sizeof(vote) * ((*movies)[i].Nvotes - count));
-				if (new_votes == NULL)
-				{
-					printf("Failed to allocate memory.\n");
-					exit(EXIT_FAILURE);
-				}
-				for (int k = 0; k < (*movies)[i].Nvotes; k++)
-				{
-					if ((*movies)[i].p2list[k].value != worst)
+					found = 1;
+					//printf("Deleted WORST %d, %s\n", worst, (*movies)[i].p2list[j].p2comment);
+					for (int k = j; k < (*movies)[i].Nvotes - 1; k++)
 					{
-						new_votes[idx].value = (*movies)[i].p2list[k].value;
-						new_votes[idx].p2comment = malloc(MAX_COMMENT_LENGTH);
-						strcpy_s(new_votes[idx].p2comment, MAX_COMMENT_LENGTH, (*movies)[i].p2list[k].p2comment);
-						strcpy_s(new_votes[idx].country, MAX_COUNTRY_LENGTH, (*movies)[i].p2list[k].country);
-						idx++;
-					}
-				}
-				(*movies)[i].p2list = new_votes;
-				(*movies)[i].Nvotes -= count;
-			}
+						(*movies)[i].p2list[k].value = (*movies)[i].p2list[k + 1].value;
+						strcpy((*movies)[i].p2list[k].p2comment, (*movies)[i].p2list[k + 1].p2comment);
+						strcpy((*movies)[i].p2list[k].country, (*movies)[i].p2list[k + 1].country);
 
-			found = 1;
+					}
+					(*movies)[i].Nvotes--;
+					j--;
+				}
+			}
 		}
 	}
+
 	return found;
 }
 
@@ -548,6 +546,9 @@ void updateMoviesNVotes(const char* filemovies, const char* filevotes, movie** m
 		printf("%s: File opening failed!\n", filevotes);
 		exit(EXIT_FAILURE);
 	}
+
+	fprintf(file_movies, "%s\n", "format:m_id,movie_name,Genre,Lead Studio,Year");
+	fprintf(file_votes, "%s\n", "m_id:vote:coutry:comment //- means an empty comment");
 
 	for (int i = 0; i < size; i++)
 	{
@@ -579,13 +580,11 @@ void printMenu(movie** movies, int* size)
 		printf("9 - Delete Worst\n");
 		printf("0 - EXIT\n");
 
-		do 
-		{
+		do {
 			printf("Enter choice: ");
 			if (scanf_s("%d", &opt) == 1)
 				valid = 1;
-			else 
-			{
+			else {
 				while (getchar() != '\n');
 				printf("Invalid input. Please enter a valid number.\n");
 			}
@@ -607,13 +606,11 @@ void printMenu(movie** movies, int* size)
 		else if (opt == 2)
 		{
 			int mid;
-			do 
-			{
+			do {
 				printf("Enter Movie ID: ");
 				if (scanf_s("%d", &mid) == 1)
 					valid = 1;
-				else 
-				{
+				else {
 					while (getchar() != '\n');
 					printf("Invalid input. Please enter a valid number.\n");
 				}
@@ -653,13 +650,11 @@ void printMenu(movie** movies, int* size)
 		{
 			char country[MAX_COUNTRY_LENGTH];
 			int value;
-			do 
-			{
+			do {
 				printf("Enter Vote Value: ");
 				if (scanf_s("%d", &value) == 1)
 					valid = 1;
-				else 
-				{
+				else {
 					while (getchar() != '\n');
 					printf("Invalid input. Please enter a valid number.\n");
 				}
@@ -675,13 +670,11 @@ void printMenu(movie** movies, int* size)
 		else if (opt == 6)
 		{
 			int year;
-			do 
-			{
+			do {
 				printf("Enter Year: ");
 				if (scanf_s("%d", &year) == 1)
 					valid = 1;
-				else 
-				{
+				else {
 					while (getchar() != '\n');
 					printf("Invalid input. Please enter a valid number.\n");
 				}
@@ -705,13 +698,11 @@ void printMenu(movie** movies, int* size)
 		else if (opt == 8)
 		{
 			int value;
-			do 
-			{
+			do {
 				printf("Enter Vote Value: ");
 				if (scanf_s("%d", &value) == 1)
 					valid = 1;
-				else 
-				{
+				else {
 					while (getchar() != '\n');
 					printf("Invalid input. Please enter a valid number.\n");
 				}
