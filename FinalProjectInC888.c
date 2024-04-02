@@ -56,7 +56,7 @@ int countLines(const char* filename)
 }
 
 // Function receives the name of the movie file, a pointer to the movie array
-// and its size. The function will reads from the file all the data of the movies and fill the array.
+// and its size. The function will read from the file all the data of the movies and fills the array.
 int FromFile2Movies(const char* filename, movie** movies, const int size)
 {
 	*movies = (movie*)malloc(sizeof(movie) * size);
@@ -111,7 +111,7 @@ int FromFile2Movies(const char* filename, movie** movies, const int size)
 }
 
 // Function receives the name of the viewer votes file, The array of films
-// and its size.The function reads from the file and fill in the voting lists for each film
+// and its size. The function reads from the file and fills in the voting lists for each movie
 int FromFile2Votes(const char* filename, movie** movies, const int size)
 {
 	char* field;
@@ -166,8 +166,8 @@ int FromFile2Votes(const char* filename, movie** movies, const int size)
 	return counter;
 }
 
-// Function receives the array of movies and its size. The function take the movie data
-// from the user without the list of viewer votes and add the The film for the array.
+// Function receives the array of movies and its size. The function takes the movie data
+// from the user without the list of viewer votes and adds the film for the array.
 int addMovie(movie** movies, const int size)
 {
 
@@ -232,8 +232,8 @@ int addMovie(movie** movies, const int size)
 	return 1;
 }
 
-// Function receives the id of the movie, the array of movies and its size.
-// The function receives the vote data for the movie from the user and add it to the vote list for this movie.
+// Function receives the id of the movie, the array of movies, and its size.
+// The function receives the vote data for the movie from the user and adds it to the vote list for this movie.
 int addVote(int mid, movie** movies, const int size)
 {
 	char country[15], comment[100];
@@ -297,7 +297,7 @@ int addVote(int mid, movie** movies, const int size)
 
 // Function gets the name of the movie, the array of movies and its size, and prints all the comments
 // and the countries of the film.
-// return 0 if the list of viewer votes is empty, return -1 if the movie does not exist. return 1 if votes found.
+// return 0 if the list of viewer votes is empty, and return -1 if the movie does not exist. return 1 if votes are found.
 int printVotes(const char* name, movie** movies, const int size)
 {
 	for (int i = 0; i < size; i++)
@@ -319,7 +319,7 @@ int printVotes(const char* name, movie** movies, const int size)
 }
 
 // Function gets the movie of a given genre, the movie array, and its size.
-// The function prints the names of the movies of the given genre. If there are no movies of genre in the movie array, 
+// The function prints the names of the movies of the given genre.
 int countGenre(const char* genre, movie** movies, const int size)
 {
 	int count = 0;
@@ -334,8 +334,8 @@ int countGenre(const char* genre, movie** movies, const int size)
 	return count;
 }
 
-// Function receives the value of the voting score, country, the movie array and its size.
-// The function will print the names of all movies that have received a vote from any viewer in country for the movie.
+// Function receives the value of the voting score, country, the movie array, and its size.
+// The function will print the names of all movies that have received a vote from any viewer in the country for the movie.
 int printValue(const int score, const char* country, movie** movies, const int size)
 {
 	int count = 0;
@@ -355,8 +355,8 @@ int printValue(const int score, const char* country, movie** movies, const int s
 }
 
 // Function receives year, the array of movies and its size, 
-// and prints the number of different countries that voted for some movie from year.
-// A country should only be counted once.
+// and prints the number of different countries that voted for some movie from the year.
+// Each country is only counted once.
 int countCountry(const int year, movie** movies, const int size)
 {
 	int count = 0;
@@ -387,9 +387,9 @@ int countCountry(const int year, movie** movies, const int size)
 	return count;
 }
 
-// Function gets the movies array and its size.
+// Function gets the movie array and its size.
 // The function will print the name of the country whose viewers wrote the most comments (an empty comment is not counted).
-// Incase there are several such countries, the names of all countries are printed.
+// In case there are several such countries, the names of all countries are printed.
 int maxByCountry(movie** movies, const int size)
 {
 	int count = 0;
@@ -446,9 +446,9 @@ int maxByCountry(movie** movies, const int size)
 	return max;
 }
 
-// Function gets a vote value, the array of movies and its size. 
+// Function gets a vote value, the array of movies, and its size. 
 // The function will create a file called Recommendation.txt into which the names of 
-// the movies and its genre will be written of which the average vote is large than average.
+// the movies and their genres will be written if their average value is greater than the entered vote value.
 void RecommendMovie(const int vote, movie** movies, const int size)
 {
 	FILE* file_recommend;
@@ -479,8 +479,8 @@ void RecommendMovie(const int vote, movie** movies, const int size)
 	}
 }
 
-// Function gets a movie genre, the movie array and its size. 
-// The function deletes the vote with the lowest value for movie genre.
+// Function gets a movie genre, the movie array, and its size. 
+// The function deletes the vote with the lowest value for the movie genre.
 // If there are several of them, all of them are deleted from the database.
 int deleteWorst(const char* genre, movie** movies, const int size)
 {
@@ -527,8 +527,8 @@ int deleteWorst(const char* genre, movie** movies, const int size)
 	return found;
 }
 
-// Function gets a filename for movies database, filename for voting database, the movie array and its size. 
-// Function write the updated the values from the array to the respective files
+// Function gets a filename for the movies database, a filename for the voting database, the movie array, and its size. 
+// Function writes the updated values from the array to the respective files
 void updateMoviesNVotes(const char* filemovies, const char* filevotes, movie** movies, const int size)
 {
 	FILE* file_movies;
@@ -563,7 +563,7 @@ void updateMoviesNVotes(const char* filemovies, const char* filevotes, movie** m
 }
 
 // Function that will display a menu containing all the functions that are defined for operations
-// The function also gives option to Type 0 to end the program.
+// The function also gives the option to Type 0 to end the program.
 void printMenu(movie** movies, int* size)
 {
 	int res = 0, opt = 0, valid = 0;
