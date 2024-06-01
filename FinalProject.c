@@ -1,772 +1,759 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define MAX_MOVIES 100
-#define MAX_GENRE_LENGTH 20
-#define MAX_TITLE_LENGTH 50
-#define MAX_COMMENT_LENGTH 100
-#define MAX_COUNTRY_LENGTH 16
+#define MAX_GENRE_LENGTH 20 
+#define MAX_TITLE_LENGTH 50 
+#define MAX_COMMENT_LENGTH 100 
+#define MAX_COUNTRY_LENGTH 50
+#define MAX_STUDIO_LENGTH 50
 #define MAX_VOTES 100
-#define MAX_COUNTRIES 196
 #define MOVIES "moviesData.txt"
 #define VOTES "votingData.txt"
 
-typedef struct {
-    int value;
-    char* p2comment;
-    char country[MAX_COUNTRY_LENGTH];
-} Vote;
-
-typedef struct {
-    int id;
-    char* p2name;
-    char studio[31];
-    int year;
-    int numVotes;
-    char* p2genre;
-    Vote* votes;
-} Movie;
-
-FILE* safe_open(const char* filename, const char* mode) {
-    FILE* file = fopen(filename, mode);
-    if (!file) {
-        printf("Unable to open file.\n");
-        exit(1);
-    }
-    return file;
-}
-
-int countLines(const char* filename) {
-    FILE* file = safe_open(filename, "rt");
-    int count = 0;
-    char c;
-    while ((c = getc(file)) != EOF) {
-        if (c == '\n') {
-            count++;
-        }
-    }
-    fclose(file);
-    return count;
-}
-
-void allocateMovieStrings(Movie* m, int size)
+typedef struct
 {
-    for (int i = 0; i < size; i++)
-    {
-        m[i].p2name = (char*)malloc(MAX_TITLE_LENGTH * sizeof(char)); // allocate mem for movie title
-        m[i].p2genre = (char*)malloc(MAX_GENRE_LENGTH * sizeof(char)); //allocate mem for movie genre
+	int value; // the grade of the reviewer 
+	char* p2comment;   // comment 
+	char country[MAX_COUNTRY_LENGTH]; // origin country 
 
-        if (m->p2name == NULL || m->p2genre == NULL)
-        {
-            printf("Memory allocation failed.\n");
-            exit(1); // encountered error
-        }
-    }
-}
+} vote;
 
-void allocateMovievotes(Movie* m, int size)
+typedef struct
 {
-    for (int i = 0; i < size; i++)
-    {
-        m[i].votes = malloc(MAX_VOTES * sizeof(Vote)); // allocate mem for votes array in the movie array
-        if (m[i].votes == NULL)
-        {
-            printf(" Votes memory allocation failed.\n");
-            exit(1);
-        }
+	int id; // the id of the reviewer 
+	char* p2name;   // the name of the movie (title)
+	char* p2genre;   // the type of the movie genre 
+	char studio[MAX_STUDIO_LENGTH];    // studio name
+	int year; // the year of the movie
+	vote* p2list; // the list of votes for the movie
+	int Nvotes; // the number of votes for the movie
 
+} movie;
 
-    }
-}
-
-void allocateVoteComments(Movie* m, int size)
+// Function to count the Lines in a text file
+int countLines(const char* filename)
 {
-    for (int i = 0; i < size; i++)
-    {
-        for (int j = 0; j < m[i].numVotes; j++)
-        {
-            if (i != size)
-            {
-                m[i].votes[j].p2comment = malloc(MAX_COMMENT_LENGTH * sizeof(char));
-                if (m[i].votes[j].p2comment == NULL) {
-                    printf("Memory allocation for comments failed.\n");
-                    exit(1);
-                }
-            }
-        }
+	int count = 0;
+	char buffer[MAX_TITLE_LENGTH + MAX_GENRE_LENGTH + MAX_COUNTRY_LENGTH + MAX_STUDIO_LENGTH + MAX_COMMENT_LENGTH];
+	FILE* file_ptr;
+	if (fopen_s(&file_ptr, filename, "r") == 0)
+	{
+		while (fgets(buffer, sizeof(buffer), file_ptr) != NULL)
+		{
+			count++;
+		}
+		fclose(file_ptr);
+	}
+	else {
+		printf("%s: File opening failed!\n", filename);
+		exit(EXIT_FAILURE);
+	}
 
-    }
+	return count;
 }
 
-void allocateMem4Movies(Movie* movies, int size)
+// Function receives the name of the movie file, a pointer to the movie array
+// and its size. The function will reads from the file all the data of the movies and fill the array.
+int FromFile2Movies(const char* filename, movie** movies, const int size)
 {
-    allocateMovieStrings(movies, size);
-    allocateMovievotes(movies, size);
+	*movies = (movie*)malloc(sizeof(movie) * size);
+	if (movies == NULL)
+	{
+		printf("Failed to allocate memory.\n");
+		exit(EXIT_FAILURE);
+	}
+	char* field;
+	char* next_field;
+	FILE* movie_file;
+	char buffer[MAX_TITLE_LENGTH + MAX_GENRE_LENGTH + MAX_COUNTRY_LENGTH + MAX_STUDIO_LENGTH + MAX_COMMENT_LENGTH];
+	int counter = 0;
 
+	if (fopen_s(&movie_file, filename, "r") == 0) 
+	{
+		fgets(buffer, sizeof(buffer), movie_file);
+		// printf("IGNORE: %s\n", buffer);
+		while (fgets(buffer, sizeof(buffer), movie_file) && counter < size)
+		{
+			(*movies)[counter].Nvotes = 0;
+			(*movies)[counter].p2list = NULL;
+
+			field = strtok_s(buffer, ",", &next_field);
+			(*movies)[counter].id = atoi(field);
+
+			field = strtok_s(NULL, ",", &next_field);
+			(*movies)[counter].p2name = (char*)malloc(MAX_TITLE_LENGTH);
+			strcpy_s((*movies)[counter].p2name, MAX_TITLE_LENGTH, field);
+
+			field = strtok_s(NULL, ",", &next_field);
+			(*movies)[counter].p2genre = (char*)malloc(MAX_GENRE_LENGTH);
+			strcpy_s((*movies)[counter].p2genre, MAX_GENRE_LENGTH, field);
+
+			field = strtok_s(NULL, ",", &next_field);
+			strcpy_s((*movies)[counter].studio, MAX_STUDIO_LENGTH, field);
+
+			field = strtok_s(NULL, "\n", &next_field);
+			(*movies)[counter].year = atoi(field);
+
+			counter++;
+		}
+		fclose(movie_file);
+	}
+	else
+	{
+		printf("%s: File opening failed!\n", filename);
+		exit(EXIT_FAILURE);
+	}
+
+	return counter;
 }
 
-void FromFile2Movies(const char* filename, Movie* array, int size)
+// Function receives the name of the viewer votes file, The array of films
+// and its size.The function reads from the file and fill in the voting lists for each film
+int FromFile2Votes(const char* filename, movie** movies, const int size)
 {
-    FILE* movies_file = safe_open(filename, "rt");
-    fscanf(movies_file, "%*[^\n]\n"); // first line skip
-    int records = 0;
-    while (records < size)
-    {
-        int read = fscanf(movies_file, "%d,%49[^,],%30[^,],%19[^,],%d\n", &array[records].id, array[records].p2name, array[records].p2genre, array[records].studio, &array[records].year);
-        if (read == 5)
-        {
-            array[records].numVotes = 0;
-            records++;
-        }
-        else if (read != 5 && !feof(movies_file))
-        {
-            printf("File format is incorrect.\n");
-            break;
-        }
-        else if (ferror(movies_file))
-        {
-            printf("Error reading from file.\n");
-            break;
-        }
-    }
+	char* field; 
+	char* next_field;
+	char buffer[MAX_GENRE_LENGTH + MAX_COUNTRY_LENGTH + MAX_COMMENT_LENGTH];
+	int counter = 0;
+	FILE* votes_file;
+	if (fopen_s(&votes_file, filename, "r") == 0)
+	{
+		fgets(buffer, sizeof(buffer), votes_file);
+		// printf("IGNORE: %s\n", buffer);
+		while (fgets(buffer, sizeof(buffer), votes_file))
+		{
+			int mid = -1;
+			vote new_vote;
+			field = strtok_s(buffer, ":", &next_field);
+			mid = atoi(field);
 
-    fclose(movies_file);
+			field = strtok_s(NULL, ":", &next_field);
+			new_vote.value = atoi(field);
+
+			field = strtok_s(NULL, ":", &next_field);
+			strcpy_s(new_vote.country, 15, field);
+
+			field = strtok_s(NULL, "\n", &next_field);
+			new_vote.p2comment = (char*)malloc(MAX_COMMENT_LENGTH);
+			strcpy_s(new_vote.p2comment, MAX_COMMENT_LENGTH, field);
+
+			for (size_t i = 0; i < size; i++)
+			{
+				if ((*movies)[i].id == mid)
+				{
+					int nv = (*movies)[i].Nvotes;
+					vote* new_votes = realloc((*movies)[i].p2list, (nv + 1) * sizeof(vote));
+					new_votes[nv].value = new_vote.value;
+					new_votes[nv].p2comment = malloc(MAX_COMMENT_LENGTH);
+					strcpy_s(new_votes[nv].p2comment, MAX_COMMENT_LENGTH, new_vote.p2comment);
+					strcpy_s(new_votes[nv].country, MAX_COUNTRY_LENGTH, new_vote.country);
+					(*movies)[i].p2list = new_votes;
+					(*movies)[i].Nvotes++;
+				}
+			}
+			counter++;
+		}
+		fclose(votes_file);
+	}
+	else {
+		printf("%s: File opening failed!\n", filename);
+		exit(EXIT_FAILURE);
+	}
+
+	return counter;
 }
 
-void FromFile2Votes(const char* filename, Movie* movies, int size) {
-    FILE* votes_file = safe_open(filename, "rt");
-    fscanf(votes_file, "%*[^\n]\n"); // Skip first line
-    int records = 0;
-    while (records < size) 
-    {
-        int movieId, voteValue;
-        char comment[MAX_COMMENT_LENGTH], country[MAX_COUNTRY_LENGTH];
-        int read = fscanf(votes_file, "%d:%d:%16[^:]:%99[^\n]\n", &movieId, &voteValue, country, comment);
-        if (read == 4) 
-        {
-            int movieIndex = -1;
-            for (int i = 0; i < size; i++)
-            {
-                if (movies[i].id == movieId) 
-                {
-                    movieIndex = i;
-                    break;
-                }
-            }
-            if (movieIndex != -1) 
-            {
-                if (movies[movieIndex].numVotes < MAX_VOTES)
-                {
-                    int voteIndex = movies[movieIndex].numVotes;
-                    movies[movieIndex].votes = realloc(movies[movieIndex].votes, (voteIndex + 1) * sizeof(Vote));
-                    if (movies[movieIndex].votes == NULL)
-                    {
-                        printf("Memory allocation for votes failed.\n");
-                        exit(1);
-                    }
-                    // Allocate memory for the comment
-                    movies[movieIndex].votes[voteIndex].p2comment = malloc((strlen(comment) + 1) * sizeof(char));
-                    if (movies[movieIndex].votes[voteIndex].p2comment == NULL)
-                    {
-                        printf("Memory allocation for comment failed.\n");
-                        exit(1);
-                    }
-                    // Copy comment and other vote information
-                    movies[movieIndex].votes[voteIndex].value = voteValue;
-                    strcpy(movies[movieIndex].votes[voteIndex].p2comment, comment);
-                    strcpy(movies[movieIndex].votes[voteIndex].country, country);
-                    // Increment numVotes for the movie
-                    movies[movieIndex].numVotes++;
-                }
-            }
-            else if (read != 4 && !feof(votes_file)) {
-                printf("File format is incorrect.\n");
-            }
-            else if (ferror(votes_file)) {
-                printf("Error while reading from file.\n");
-                break; // End of file reached
-            }
-        }
-        records++; // Increment records regardless of read result
-    }
-    fclose(votes_file);
-}
-
-void addMovie(Movie** movies, int* size)
+// Function receives the array of movies and its size. The function take the movie data
+// from the user without the list of viewer votes and add the The film for the array.
+int addMovie(movie** movies, const int size)
 {
-    // Prompt the user to enter movie details
-    char name[MAX_TITLE_LENGTH];
-    char studio[31];
-    char genre[MAX_GENRE_LENGTH];
-    int year;
 
-    printf("Enter the name of the movie: ");
-    scanf(" %[^\n]", name);
+	char name[MAX_TITLE_LENGTH], genre[MAX_GENRE_LENGTH], studio[MAX_STUDIO_LENGTH];
+	int year = 0;
 
-    printf("\nEnter the studio of the movie: ");
-    scanf(" %[^\n]", studio);
+	while (getchar() != '\n');
+	printf("Enter movie name: ");
+	scanf_s("%99[^\n]", name, (unsigned)_countof(name));
 
-    printf("\nEnter the year of the movie: ");
-    while (scanf("%d", &year) != 1)
-    {
-        printf("\nInvalid input. Please enter a valid year: ");
-        while (getchar() != '\n');
-    }
+	while (getchar() != '\n');
+	printf("Enter movie genre: ");
+	scanf_s("%99[^\n]", genre, (unsigned)_countof(genre));
 
-    printf("\nEnter the genre of the movie: ");
-    scanf(" %[^\n]", genre);
+	while (getchar() != '\n');
+	printf("Enter studio name: ");
+	scanf_s("%99[^\n]", studio, (unsigned)_countof(studio));
 
+	int valid = 0;
+	do {
+		printf("Enter year: ");
+		if (scanf_s("%d", &year) == 1)
+			valid = 1;
+		else {
+			while (getchar() != '\n');
+			printf("Invalid input. Please enter a valid number.\n");
+		}
+	} while (!valid);
+	valid = 0;
 
-    // Reallocate memory
-    *movies = realloc(*movies, (*size + 1) * sizeof(Movie));
-    if (*movies == NULL)
-    {
-        printf("Memory allocation failed.\n");
-        exit(1);
-    }
+	for (size_t i = 0; i < size; i++)
+	{
+		if (strcmp((*movies)[i].p2name, name) == 0)
+		{
+			return 0;
+		}
+	}
 
-    // Allocate memory for the name and genre of the new movie
-    (*movies)[*size].p2name = malloc((strlen(name) + 1) * sizeof(char));
-    if ((*movies)[*size].p2name == NULL)
-    {
-        printf("Memory allocation failed.\n");
-        exit(1);
-    }
+	movie* new_movies = realloc(*movies, (size + 1) * sizeof(movie));
+	if (new_movies == NULL)
+	{
+		printf("Failed to allocate memory.\n");
+		exit(EXIT_FAILURE);
+	}
+	new_movies[size].p2name = (char*)malloc(MAX_TITLE_LENGTH);
+	new_movies[size].p2genre = (char*)malloc(MAX_GENRE_LENGTH);
+	if (new_movies[size].p2genre == NULL || new_movies[size].p2name == NULL)
+	{
+		printf("Failed to allocate memory.\n");
+		exit(EXIT_FAILURE);
+	}
 
-    (*movies)[*size].p2genre = malloc((strlen(genre) + 1) * sizeof(char));
-    if ((*movies)[*size].p2genre == NULL)
-    {
-        printf("Memory allocation failed.\n");
-        exit(1);
-    }
+	new_movies[size].id = size + 1;
+	strcpy_s(new_movies[size].p2name, MAX_TITLE_LENGTH, name);
+	strcpy_s(new_movies[size].p2genre, MAX_GENRE_LENGTH, genre);
+	strcpy_s(new_movies[size].studio, MAX_STUDIO_LENGTH, studio);
+	new_movies[size].year = year;
+	new_movies[size].Nvotes = 0;
+	new_movies[size].p2list = NULL;
 
-    // Set the movie details
-    (*movies)[*size].id = *size + 1; // IDs start from 1 and increment by 1
-    strcpy((*movies)[*size].p2name, name);
-    strcpy((*movies)[*size].studio, studio);
-    strcpy((*movies)[*size].p2genre, genre);
-    (*movies)[*size].year = year;
-    (*movies)[*size].numVotes = 0;
-    (*movies)[*size].votes = NULL;
-
-    // Increment the size of the movies array
-    (*size)++;
+	*movies = new_movies;
+	return 1;
 }
 
-
-
-int addVote(int movieId, Movie* movies, int size)
+// Function receives the id of the movie, the array of movies and its size.
+// The function receives the vote data for the movie from the user and add it to the vote list for this movie.
+int addVote(int mid, movie** movies, const int size)
 {
-    int index = -1; // Initialize index
-    for (int i = 0; i < size; i++) // Iterate through array
-    {
-        if (movies[i].id == movieId) // Match index to movie's location in the array
-        {
-            index = i;
-            break;
-        }
-    }
-    if (index == -1)  // If movie doesn't exist in the array
-    {
-        printf("Movie with ID %d not found.\n", movieId);
-        return 0;
-    }
+	char country[15], comment[100];
+	int value = 0, valid = 0;
 
-    int newVote;
-    do {
-        printf("Enter the vote for movie %s (%d) (between 1-10): ", movies[index].p2name, movieId);
-        scanf("%d", &newVote);
-        if (newVote < 1 || newVote>10)
-            printf("Please enter a valid vote.\n");
-    } while (newVote < 1 || newVote>10); // Input check
+	do {
+		printf("Enter Vote Value: ");
+		if (scanf_s("%d", &value) == 1)
+			valid = 1;
+		else {
+			while (getchar() != '\n');
+			printf("Invalid input. Please enter a valid number.\n");
+		}
+	} while (!valid);
+	valid = 0;
 
-    for (int i = 0; i < movies[index].numVotes; i++)
-    {
-        if (movies[index].votes[i].value == newVote) // Check if vote already exists
-        {
-            printf("Vote %d already exists for movie %s (%d).\n", newVote, movies[index].p2name, movieId);
-            return 0;
-        }
-    }
+	printf("Enter country: ");
+	scanf_s("%s", country, (unsigned)_countof(country));
 
-    if (movies[index].numVotes < MAX_VOTES)
-    {
-        // Allocate memory for the votes array if it hasn't been allocated yet
-        if (movies[index].votes == NULL)
-        {
-            movies[index].votes = (Vote*)malloc(MAX_VOTES * sizeof(Vote));
-            if (movies[index].votes == NULL)
-            {
-                printf("Memory allocation failed.\n");
-                return 0;
-            }
-        }
+	while (getchar() != '\n');
+	printf("Enter comment: ");
+	scanf_s("%99[^\n]", comment, (unsigned)_countof(comment));
 
-        // Allocate memory for the new vote's comment
-        movies[index].votes[movies[index].numVotes].p2comment = (char*)malloc(MAX_COMMENT_LENGTH * sizeof(char));
-        if (movies[index].votes[movies[index].numVotes].p2comment == NULL)
-        {
-            printf("Memory allocation failed.\n");
-            return 0;
-        }
+	int idx = -1;
+	for (size_t i = 0; i < size; i++)
+	{
+		if ((*movies)[i].id == mid)
+		{
+			idx = i;
+			for (size_t j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				if ((*movies)[i].p2list[j].value == value && (strcmp((*movies)[i].p2list[j].country, country) == 0) && (strcmp((*movies)[i].p2list[j].p2comment, comment) == 0))
+				{
+					return 0;
+				}
+			}
+			break;
+		}
+	}
 
-        // Set the value of the new vote
-        movies[index].votes[movies[index].numVotes].value = newVote;
+	if (idx == -1)
+	{
+		return 0;
+	}
 
-        // Prompt the user to enter comment for the new vote
-        printf("Enter comment for the vote: ");
-        getchar(); // Consume newline left in the input buffer
-        fgets(movies[index].votes[movies[index].numVotes].p2comment, MAX_COMMENT_LENGTH, stdin);
-        movies[index].votes[movies[index].numVotes].p2comment[strcspn(movies[index].votes[movies[index].numVotes].p2comment, "\n")] = '\0'; // Remove newline character
-
-        // Prompt the user to enter country for the new vote
-        printf("Enter country for the vote: ");
-        fgets(movies[index].votes[movies[index].numVotes].country, MAX_COUNTRY_LENGTH, stdin);
-        movies[index].votes[movies[index].numVotes].country[strcspn(movies[index].votes[movies[index].numVotes].country, "\n")] = '\0'; // Remove newline character
-
-        // Increment the number of votes for the movie
-        movies[index].numVotes++;
-
-        printf("Vote %d added successfully for movie %s (%d).\n", newVote, movies[index].p2name, movieId);
-        return 1;
-    }
-    else
-    {
-        printf("Maximum number of votes reached for movie %s (%d).\n", movies[index].p2name, movieId);
-        return 0;
-    }
+	int nv = (*movies)[idx].Nvotes;
+	vote* new_votes = realloc((*movies)[idx].p2list, (nv + 1) * sizeof(vote));
+	if (new_votes == NULL)
+	{
+		printf("Failed to allocate memory.\n");
+		exit(EXIT_FAILURE);
+	}
+	new_votes[nv].value = value;
+	new_votes[nv].p2comment = malloc(MAX_COMMENT_LENGTH);
+	strcpy_s(new_votes[nv].p2comment, MAX_COMMENT_LENGTH, comment);
+	strcpy_s(new_votes[nv].country, MAX_COUNTRY_LENGTH, country);
+	(*movies)[idx].p2list = new_votes;
+	(*movies)[idx].Nvotes++;
+	return 1;
 }
 
-void printMenu() {
-    printf("\nMain Menu\n");
-    printf("1. Add Movie\n");
-    printf("2. Add Vote\n");
-    printf("3. Print Votes\n");
-    printf("4. Count Genre\n");
-    printf("5. Print value\n");
-    printf("6. Count countries\n");
-    printf("7. Max by country\n");
-    printf("8. Recommendations\n");
-    printf("9. Delete worst\n");
-    printf("0. Exit\n");
-}
-
-void saveMoviesToFile(const char* filename, Movie* movies, int size)
+// Function gets the name of the movie, the array of movies and its size, and prints all the comments
+// and the countries of the film.
+// return 0 if the list of viewer votes is empty, return -1 if the movie does not exist. return 1 if votes found.
+int printVotes(const char* name, movie** movies, const int size)
 {
-    FILE* file = safe_open(filename, "wt");
-    fprintf(file, "format:m_id,movie_name,Genre,Lead Studio,Year\n");
-    for (int i = 0; i < size; i++)
-    {
-        fprintf(file, "%d,%s,%s,%d\n", movies[i].id, movies[i].p2name, movies[i].studio, movies[i].year);
-    }
-    fclose(file);
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp((*movies)[i].p2name, name) == 0)
+		{
+			if ((*movies)[i].Nvotes == 0)
+			{
+				return 0;
+			}
+			for (int j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				printf("%d, %s, %s\n", (*movies)[i].p2list[j].value, (*movies)[i].p2list[j].country, (*movies)[i].p2list[j].p2comment);
+			}
+			return 1;
+		}
+	}
+	return -1;
 }
 
-void saveVotesToFile(const char* filename, Movie* movies, int size)
+// Function gets the movie of a given genre, the movie array, and its size.
+// The function prints the names of the movies of the given genre. If there are no movies of genre in the movie array, 
+int countGenre(const char* genre, movie** movies, const int size)
 {
-    FILE* file = safe_open(filename, "wt");
-    fprintf(file, "m_id:vote:country:comment\n");
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < movies[i].numVotes; j++)
-        {
-            // Check for empty comment
-            const char* comment = strcmp(movies[i].votes[j].p2comment, "-") == 0 ? "" : movies[i].votes[j].p2comment;
-            fprintf(file, "%d:%d:%s:%s\n", movies[i].id, movies[i].votes[j].value, movies[i].votes[j].country, comment);
-        }
-    }
-    fclose(file);
+	int count = 0;
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp((*movies)[i].p2genre, genre) == 0)
+		{
+			printf("%s\n", (*movies)[i].p2name);
+			count++;
+		}
+	}
+	return count;
 }
 
-
-int printVotes(const char* movieName, Movie* movies, int size)
+// Function receives the value of the voting score, country, the movie array and its size.
+// The function will print the names of all movies that have received a vote from any viewer in country for the movie.
+int printValue(const int score, const char* country, movie** movies, const int size)
 {
-    for (int i = 0; i < size; i++) //iterate through array
-    {
-        if (strcmp(movies[i].p2name, movieName) == 0)  //Compare names
-        {
-            if (movies[i].numVotes == 0) // If movie has no votes
-            {
-                printf("No votes for movie %s.\n", movieName);
-                return 0;
-            }
-            printf("Comments for movie %s:\n", movieName);
-            for (int j = 0; j < movies[i].numVotes; j++)  //Movie has votes
-            {
-                printf("Comment: %s\n", movies[i].votes[j].p2comment);
-                printf("Country: %s\n", movies[i].votes[j].country);
-            }
-            return 1;
-        }
-    }
-    // Movie not found in the array
-    return -1;
+	int count = 0;
+	for (int i = 0; i < size; i++)
+	{
+		for (int j = 0; j < (*movies)[i].Nvotes; j++)
+		{
+			if (strcmp((*movies)[i].p2list[j].country, country) == 0 && (*movies)[i].p2list[j].value == score)
+			{
+				printf("%s\n", (*movies)[i].p2name);
+				count++;
+			}
+
+		}
+	}
+	return count;
 }
 
-int countGenre(const char* genre, Movie* movies, int size)
+// Function receives year, the array of movies and its size, 
+// and prints the number of different countries that voted for some movie from year.
+// A country should only be counted once.
+int countCountry(const int year, movie** movies, const int size)
 {
-    int found = 0;
-    printf("Movies of genre %s:\n", genre);
-    for (int i = 0; i < size; i++) //Iterate through the array
-    {
-        if (strcmp(movies[i].p2genre, genre) == 0) // Find movies with the same genre
-        {
-            printf("- %s\n", movies[i].p2name);
-            found = 1;
-        }
-    }
-    if (!found) // No movies with the genre entered exist in the array
-    {
-        printf("No movies found for %s genre.\n", genre);
-        return -1;
-    }
-    return found;
+	int count = 0;
+	char countries[500][15];
+	for (int i = 0; i < size; i++)
+	{
+		if ((*movies)[i].year == year)
+		{
+			for (int j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				int found = 0;
+				for (int k = 0; k < count; k++)
+				{
+					if (strcmp((*movies)[i].p2list[j].country, countries[k]) == 0)
+					{
+						found = 1;
+						break;
+					}
+				}
+				if (found == 0)
+				{
+					strcpy_s(countries[count], 15, (*movies)[i].p2list[j].country);
+					count++;
+				}
+			}
+		}
+	}
+	return count;
 }
 
-void printValue(int value, const char* country, Movie* movies, int size) {
-    int found = 0;
-    printf("Movies with vote value %d from country %s:\n", value, country);
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < movies[i].numVotes; j++)
-        {
-            if (movies[i].votes[j].value == value && strcmp(movies[i].votes[j].country, country) == 0) {
-                printf("- %s\n", movies[i].p2name);
-                found = 1;
-                break;
-            }
-        }
-    }
-    if (!found) {
-        printf("No movies found with vote value %d from country %s.\n", value, country);
-    }
-}
-
-int countCountry(int year, Movie* movies, int size)
+// Function gets the movies array and its size.
+// The function will print the name of the country whose viewers wrote the most comments (an empty comment is not counted).
+// Incase there are several such countries, the names of all countries are printed.
+int maxByCountry(movie** movies, const int size)
 {
-    char countries[MAX_COUNTRIES][MAX_COUNTRY_LENGTH]; // Array to store unique countries
-    int numUniqueCountries = 0; // Counter for unique countries
+	int count = 0;
+	char countries[500][MAX_COUNTRY_LENGTH];
+	int counter[500];
+	for (int i = 0; i < 500; i++)
+		counter[i] = 0;
 
-    // Iterate through movies to find votes for the given year
-    for (int i = 0; i < size; i++)
-    {
-        if (movies[i].year == year)
-        {
-            // Iterate through the votes of the current movie
-            for (int j = 0; j < movies[i].numVotes; j++)
-            {
-                // Check if the country has already been counted
-                int isNewCountry = 1;
-                for (int k = 0; k < numUniqueCountries; k++)
-                {
-                    if (strcmp(movies[i].votes[j].country, countries[k]) == 0)
-                    {
-                        isNewCountry = 0;
-                        break;
-                    }
-                }
-                // If it's a new country, add it to the list of unique countries
-                if (isNewCountry)
-                {
-                    strcpy(countries[numUniqueCountries], movies[i].votes[j].country);
-                    numUniqueCountries++;
-                }
-            }
-        }
-    }
+	for (int i = 0; i < size; i++)
+	{
+		for (int j = 0; j < (*movies)[i].Nvotes; j++)
+		{
+			if (strcmp((*movies)[i].p2list[j].p2comment, "-") != 0)
+			{
+				int found = -1;
+				for (int k = 0; k < count; k++)
+				{
+					if (strcmp((*movies)[i].p2list[j].country, countries[k]) == 0)
+					{
+						found = k;
+						break;
+					}
+				}
+				if (found == -1)
+				{
+					counter[count]++;
+					strcpy_s(countries[count], 15, (*movies)[i].p2list[j].country);
+					count++;
+				}
+				else
+				{
+					counter[found]++;
+				}
+			}
+		}
+	}
 
+	int max = 0;
+	for (int i = 0; i < 500; i++)
+	{
+		if (counter[i] > max)
+		{
+			max = counter[i];
+		}
+	}
 
-    // Print the number of unique countries
-    if (numUniqueCountries == 0)
-    {
-        printf("No votes for movies from the year %d.\n", year);
-    }
-    else
-    {
-        printf("Number of unique countries that voted for movies from the year %d, is %d.\n", year, numUniqueCountries);
-    }
-
-    return numUniqueCountries;
+	for (int i = 0; i < 500; i++)
+	{
+		if (counter[i] == max)
+		{
+			printf("%s\n", countries[i]);
+		}
+	}
+	return max;
 }
 
-void maxByCountry(Movie* movies, int size)
+// Function gets a vote value, the array of movies and its size. 
+// The function will create a file called Recommendation.txt into which the names of 
+// the movies and its genre will be written of which the average vote is large than average.
+void RecommendMovie(const int vote, movie** movies, const int size)
 {
-    // Array to keep track of the number of comments by country
-    int commentCount[MAX_COUNTRIES] = { 0 };
-    int maxCommentCount = 0; // Maximum comment count
-    char countries[MAX_COUNTRIES][MAX_COUNTRY_LENGTH]; // Array to store country names
-
-    // Initialize countries array
-    for (int i = 0; i < MAX_COUNTRIES; i++)
-    {
-        countries[i][0] = '\0'; // Set all country names to empty string
-    }
-
-    // Count comments by country
-    for (int i = 0; i < size; i++)
-    {
-        for (int j = 0; j < movies[i].numVotes; j++)
-        {
-            if (strcmp(movies[i].votes[j].p2comment, "-") != 0)
-            {
-                // Find or add the country to the list
-                int countryIndex = -1;
-                for (int k = 0; k < MAX_COUNTRIES; k++)
-                {
-                    if (strcmp(countries[k], movies[i].votes[j].country) == 0)
-                    {
-                        countryIndex = k;
-                        break;
-                    }
-                    else if (countries[k][0] == '\0')
-                    {
-                        strcpy(countries[k], movies[i].votes[j].country);
-                        countryIndex = k;
-                        break;
-                    }
-                }
-                // Increment comment count for the country
-                if (countryIndex != -1)
-                {
-                    commentCount[countryIndex]++;
-                    // Update maximum comment count
-                    if (commentCount[countryIndex] > maxCommentCount)
-                    {
-                        maxCommentCount = commentCount[countryIndex];
-                    }
-                }
-            }
-        }
-    }
-
-    // Print countries with maximum comment count
-    printf("Countries with the most comments:\n");
-    int found = 0;
-    for (int i = 0; i < MAX_COUNTRIES; i++)
-    {
-        if (commentCount[i] == maxCommentCount && countries[i][0] != '\0')
-        {
-            printf("- %s\n", countries[i]);
-            found = 1;
-        }
-    }
-
-    if (!found)
-    {
-        printf("No comments found.\n");
-    }
+	FILE* file_recommend;
+	int res = fopen_s(&file_recommend, "Recommendation.txt", "w");
+	if (res == 0)
+	{
+		fprintf(file_recommend, "%s\n", "movie_name,Genre");
+		float average = 0;
+		for (int i = 0; i < size; i++)
+		{
+			average = 0;
+			for (int j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				average += (*movies)[i].p2list[j].value;
+			}
+			average /= (*movies)[i].Nvotes;
+			if (average > vote)
+			{
+				fprintf(file_recommend, "%s, %s\n", (*movies)[i].p2name, (*movies)[i].p2genre);
+			}
+		}
+		fclose(file_recommend);
+	}
+	else
+	{
+		printf("%s: File opening failed!\n", "Recommendation.txt");
+		exit(EXIT_FAILURE);
+	}
 }
 
-void RecommendMovie(int X, Movie* movies, int size) {
-    FILE* recommendationFile = fopen("Recommendation.txt", "w"); //Open new file for recommendations
-    if (recommendationFile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-    for (int i = 0; i < size; i++)
-    {
-        // Initialize for each loop
-        int totalVotes = 0;
-        int totalScore = 0;
-        float average = 0;
-
-        if (movies[i].numVotes == 0) continue; //Skip movies that have no votes
-
-        for (int j = 0; j < movies[i].numVotes; j++)
-        {
-            totalVotes++;
-            totalScore += movies[i].votes[j].value;
-        }
-        //Calculating average vote rating for each movie
-        average = (float)totalScore / totalVotes;
-
-        if (average >= X)
-        {
-            // write movies with average greater than X to recommendations file
-            fprintf(recommendationFile, "%s, %s\n", movies[i].p2name, movies[i].p2genre);
-        }
-    }
-
-    fclose(recommendationFile);
-}
-
-void deleteWorst(const char* genre, Movie* movies, int* size)
+// Function gets a movie genre, the movie array and its size. 
+// The function deletes the vote with the lowest value for movie genre.
+// If there are several of them, all of them are deleted from the database.
+int deleteWorst(const char* genre, movie** movies, const int size)
 {
-    int minVote = 10; // Initialize minVote to a high value
-    int found = 0; // Flag to check if any movie of the given genre is found
+	int found = 0;
+	int worst = 9999;
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp((*movies)[i].p2genre, genre) == 0)
+		{
+			for (int j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				if ((*movies)[i].p2list[j].value < worst)
+				{
+					worst = (*movies)[i].p2list[j].value;
+				}
+			}
+		}
+	}
 
-    // Find the minimum vote for movies of the given genre
-    for (int i = 0; i < *size; i++) 
-    {
-        if (strcmp(movies[i].p2genre, genre) == 0)
-        {
-            found = 1; // At least one movie of the given genre is found
-            for (int j = 0; j < movies[i].numVotes; j++)
-            {
-                if (movies[i].votes[j].value < minVote)
-                {
-                    minVote = movies[i].votes[j].value;
-                }
-            }
-        }
-    }
+	for (int i = 0; i < size; i++)
+	{
+		if (strcmp((*movies)[i].p2genre, genre) == 0)
+		{
+			for (int j = 0; j < (*movies)[i].Nvotes; j++)
+			{
+				if ((*movies)[i].p2list[j].value == worst)
+				{
+					found = 1;
+					//printf("Deleted WORST %d, %s\n", worst, (*movies)[i].p2list[j].p2comment);
+					for (int k = j; k < (*movies)[i].Nvotes - 1; k++)
+					{
+						(*movies)[i].p2list[k].value = (*movies)[i].p2list[k + 1].value;
+						strcpy((*movies)[i].p2list[k].p2comment, (*movies)[i].p2list[k + 1].p2comment);
+						strcpy((*movies)[i].p2list[k].country, (*movies)[i].p2list[k + 1].country);
 
-    if (!found)
-    {
-        printf("No movies of genre %s found.\n", genre);
-        return;
-    }
+					}
+					(*movies)[i].Nvotes--;
+					j--;
+				}
+			}
+		}
+	}
 
-    // Delete all votes with the minimum value for movies of the given genre
-    for (int i = 0; i < *size; i++) {
-        if (strcmp(movies[i].p2genre, genre) == 0)
-        {
-            int k = 0; // Index for copying votes without the worst vote
-            for (int j = 0; j < movies[i].numVotes; j++)
-            {
-                if (movies[i].votes[j].value != minVote)
-                {
-                    movies[i].votes[k++] = movies[i].votes[j];
-                }
-            }
-            movies[i].numVotes = k; // Update the number of votes for the movie
-        }
-    }
-
-    printf("Votes with the lowest value for genre %s have been deleted.\n", genre);
+	return found;
 }
 
-void freeMemory(Movie* movies, int size)
+// Function gets a filename for movies database, filename for voting database, the movie array and its size. 
+// Function write the updated the values from the array to the respective files
+void updateMoviesNVotes(const char* filemovies, const char* filevotes, movie** movies, const int size)
 {
-    // Free memory for each movie's votes
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < movies[i].numVotes; j++)
-        {
-            free(movies[i].votes[j].p2comment);
-        }
-        free(movies[i].votes);
-        free(movies[i].p2name);
-        free(movies[i].p2genre);
-    }
+	FILE* file_movies;
+	FILE* file_votes;
+	int res1 = fopen_s(&file_movies, filemovies, "w");
+	if (res1 != 0)
+	{
+		printf("%s: File opening failed!\n", filemovies);
+		exit(EXIT_FAILURE);
+	}
 
-    // Free memory for the array of movies
-    free(movies);
+	int res2 = fopen_s(&file_votes, filevotes, "w");
+	if (res2 != 0)
+	{
+		printf("%s: File opening failed!\n", filevotes);
+		exit(EXIT_FAILURE);
+	}
+
+	fprintf(file_movies, "%s\n", "format:m_id,movie_name,Genre,Lead Studio,Year");
+	fprintf(file_votes, "%s\n", "m_id:vote:coutry:comment //- means an empty comment");
+
+	for (int i = 0; i < size; i++)
+	{
+		fprintf(file_movies, "%d,%s,%s,%s,%d\n", (*movies)[i].id, (*movies)[i].p2name, (*movies)[i].p2genre, (*movies)[i].studio, (*movies)[i].year);
+		for (int j = 0; j < (*movies)[i].Nvotes; j++)
+		{
+			fprintf(file_votes, "%d:%d:%s:%s\n", (*movies)[i].id, (*movies)[i].p2list[j].value, (*movies)[i].p2list[j].country, (*movies)[i].p2list[j].p2comment);
+		}
+	}
+	fclose(file_movies);
+	fclose(file_votes);
 }
 
+// Function that will display a menu containing all the functions that are defined for operations
+// The function also gives option to Type 0 to end the program.
+void printMenu(movie** movies, int* size)
+{
+	int res = 0, opt = 0, valid = 0;
+	do
+	{
+		printf("1 - Add Movies\n");
+		printf("2 - Add Vote\n");
+		printf("3 - Print Votes\n");
+		printf("4 - Count Genre\n");
+		printf("5 - Print Value\n");
+		printf("6 - Count Country\n");
+		printf("7 - Max by Country\n");
+		printf("8 - Recommended Movie\n");
+		printf("9 - Delete Worst\n");
+		printf("0 - EXIT\n");
 
+		do {
+			printf("Enter choice: ");
+			if (scanf_s("%d", &opt) == 1)
+				valid = 1;
+			else {
+				while (getchar() != '\n');
+				printf("Invalid input. Please enter a valid number.\n");
+			}
+		} while (!valid);
+		valid = 0;
+
+		if (opt == 1)
+		{
+			res = addMovie(movies, *size);
+			if (res == 1)
+			{
+				(*size)++;
+			}
+			else if (res == 0)
+			{
+				printf("Movie already exists!\n");
+			}
+		}
+		else if (opt == 2)
+		{
+			int mid;
+			do {
+				printf("Enter Movie ID: ");
+				if (scanf_s("%d", &mid) == 1)
+					valid = 1;
+				else {
+					while (getchar() != '\n');
+					printf("Invalid input. Please enter a valid number.\n");
+				}
+			} while (!valid);
+			valid = 0;
+
+			addVote(mid, movies, *size);
+		}
+		else if (opt == 3)
+		{
+			char name[MAX_TITLE_LENGTH];
+			while (getchar() != '\n');
+			printf("Enter Movie Name: ");
+			scanf_s("%99[^\n]", name, (unsigned)_countof(name));
+			res = printVotes(name, movies, *size);
+			if (res == 0)
+			{
+				printf("No votes are found for movie %s\n", name);
+			}
+			else if (res == -1)
+			{
+				printf("Movie %s not found!\n", name);
+			}
+		}
+		else if (opt == 4)
+		{
+			char genre[MAX_GENRE_LENGTH];
+			while (getchar() != '\n');
+			printf("Enter Movie Genre: ");
+			scanf_s("%99[^\n]", genre, (unsigned)_countof(genre));
+			if (countGenre(genre, movies, *size) == 0)
+			{
+				printf("No movie for genre %s found!\n", genre);
+			}
+		}
+		else if (opt == 5)
+		{
+			char country[MAX_COUNTRY_LENGTH];
+			int value;
+			do {
+				printf("Enter Vote Value: ");
+				if (scanf_s("%d", &value) == 1)
+					valid = 1;
+				else {
+					while (getchar() != '\n');
+					printf("Invalid input. Please enter a valid number.\n");
+				}
+			} while (!valid);
+			valid = 0;
+			printf("Enter Country: ");
+			scanf_s("%s", country, (unsigned)_countof(country));
+			if (printValue(value, country, movies, *size) == 0)
+			{
+				printf("No movie have %d votes from country %s!\n", value, country);
+			}
+		}
+		else if (opt == 6)
+		{
+			int year;
+			do {
+				printf("Enter Year: ");
+				if (scanf_s("%d", &year) == 1)
+					valid = 1;
+				else {
+					while (getchar() != '\n');
+					printf("Invalid input. Please enter a valid number.\n");
+				}
+			} while (!valid);
+			valid = 0;
+			res = countCountry(year, movies, *size);
+			if (res == 0)
+			{
+				printf("No movies have been votes by any country in year %d!\n", year);
+			}
+			else
+			{
+				printf("%d countries have voted movies in year %d\n", res, year);
+			}
+		}
+		else if (opt == 7)
+		{
+			res = maxByCountry(movies, *size);
+			printf("Max votes by country are %d\n", res);
+		}
+		else if (opt == 8)
+		{
+			int value;
+			do {
+				printf("Enter Vote Value: ");
+				if (scanf_s("%d", &value) == 1)
+					valid = 1;
+				else {
+					while (getchar() != '\n');
+					printf("Invalid input. Please enter a valid number.\n");
+				}
+			} while (!valid);
+			valid = 0;
+			RecommendMovie(value, movies, *size);
+		}
+		else if (opt == 9)
+		{
+			char genre[MAX_GENRE_LENGTH];
+			while (getchar() != '\n');
+			printf("Enter Movie Genre: ");
+			scanf_s("%99[^\n]", genre, (unsigned)_countof(genre));
+			if (deleteWorst(genre, movies, *size) == 0)
+			{
+				printf("No movie for genre %s found!\n", genre);
+			}
+		}
+		printf("\n");
+	} while (opt != 0);
+}
+
+// Main Driver
+// Load Movies, Votings and Print Menus
+// After the operatons write updated values to files
+// Free any allocated memory
 int main()
 {
-    int size = countLines(MOVIES);
-    Movie* movies = (Movie*)malloc(size * sizeof(Movie));
-    if (movies == NULL)
-    {
-        printf("Memory allocation failed.\n");
-        return 1;
-    }
-    allocateMem4Movies(movies, size);
-    FromFile2Movies(MOVIES, movies, size);
-    allocateVoteComments(movies, size);
-    FromFile2Votes(VOTES, movies, size);
+	movie* movies = NULL;
+	int Nmovies = FromFile2Movies(MOVIES, &movies, countLines(MOVIES));
+	int Nvotes = 0;
 
-    int choice;
-    do {
-        printMenu();
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
-        while (getchar() != '\n'); // Clear input buffer
-        switch (choice) {
-        case 1:
-            addMovie(&movies, &size);
-            break;
-        case 2:
-            printf("Enter the ID of the movie to add a vote: ");
-            int movieId;
-            scanf("%d", &movieId);
-            if (addVote(movieId, movies, size))
-                printf("Vote added successfully!\n");
-            else
-                printf("Failed to add vote.\n");
-            break;
-        case 3:
-            printf("Enter the name of the movie to print votes: ");
-            char movieName[MAX_TITLE_LENGTH];
-            fgets(movieName, MAX_TITLE_LENGTH, stdin);
-            movieName[strcspn(movieName, "\n")] = '\0';
-            int result1 = printVotes(movieName, movies, size);
-            if (result1 == 0)
-                printf("No votes or movie not found.\n");
-            else if (result1 == -1)
-                printf("Movie not found.\n");
-            break;
-        case 4:
-            printf("Enter the genre to count: ");
-            char genre[MAX_GENRE_LENGTH];
-            scanf("%s", genre);
-            int result2 = countGenre(genre, movies, size);
-            if (!result2)
-                printf("No movies found for genre %s.\n", genre);
-            break;
+	if (movies != NULL)
+	{
+		Nvotes = FromFile2Votes(VOTES, &movies, Nmovies);
+	}
 
-        case 5:
-            printf("please enter a vote value (between 1-10): \n");
-            char C[MAX_COUNTRY_LENGTH];
-            int V;
-            do {
-                scanf("%d", &V);
-                if (V < 1 || V > 10)
-                    printf("Please enter a valid vote value: \n");
-            } while (V < 1 || V>10);
-            while (getchar() != '\n'); // Clear input buffer
-            printf("Please enter a country: \n");
-            fgets(C, MAX_COUNTRY_LENGTH, stdin);
-            C[strcspn(C, "\n")] = '\0';
-            printValue(V, C, movies, size);
-            break;
+	printMenu(&movies, &Nmovies);
 
-        case 6:
-            printf("Please enter a year: ");
-            int Y;
-            do
-            {
-                scanf("%d", &Y);
-                if (Y < 1900 || Y>2100)
-                    printf("Please enter a valid year: ");
-            } while (Y < 1900 || Y>2100);
-            countCountry(Y, movies, size);
-            break;
+	updateMoviesNVotes(MOVIES, VOTES, &movies, Nmovies);
 
-        case 7:
-            maxByCountry(movies, size);
-            break;
-
-        case 8:
-            printf("Please enter a minimum vote value: ");
-            int X;
-            do {
-                scanf("%d", &X);
-                if (X < 1 || X>10)
-                    printf("Please enter a vaild vote value: ");
-            } while (X < 1 || X>10);
-            RecommendMovie(X, movies, size);
-            break;
-
-        case 9:
-            printf("Please enter a genre: ");
-            char G[MAX_GENRE_LENGTH];
-            scanf("%s", G);
-            deleteWorst(G, movies, &size);
-            break;
-
-        case 0:
-            printf("Exiting program...\n");
-            break;
-        default:
-            printf("Invalid choice. Please try again.\n");
-        }
-    } while (choice != 0);
-
-    saveMoviesToFile(MOVIES, movies, size);
-    saveVotesToFile(VOTES, movies, size);
-    freeMemory(movies, size);
-    return 0;
+	for (int i = 0; i < Nmovies; i++)
+	{
+		for (int j = 0; j < movies[i].Nvotes; j++)
+		{
+			free(movies[i].p2list[j].p2comment);
+		}
+		free(movies[i].p2name);
+		free(movies[i].p2genre);
+		free(movies[i].p2list);
+	}
+	free(movies);
+	return 0;
 }
